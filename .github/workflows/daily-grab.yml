@@ -1,0 +1,45 @@
+name: Update EPG Vidio
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Jalan otomatis jam 7 pagi WIB (00:00 UTC)
+  workflow_dispatch:    # Tombol manual play
+
+jobs:
+  grab-epg:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install
+
+      # Bagian Grabbing (Mengambil Jadwal)
+      - name: Grab EPG
+        run: npm run grab --- --site=vidio.com
+
+      # Bagian Update Channel List (Sesuai request Anda)
+      - name: Update Channel List
+        run: npm run channels:parse --- --config=./sites/[vidio.com/vidio.com.config.js](https://vidio.com/vidio.com.config.js) --output=./sites/[vidio.com/vidio.com.channels.xml](https://vidio.com/vidio.com.channels.xml)
+
+      # Bagian Testing (Optional)
+      - name: Run Tests
+        run: npm test --- vidio.com
+
+      # Bagian Simpan Hasil (Commit & Push)
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name 'GitHub Action Bot'
+          git config --global user.email 'action@github.com'
+          git add sites/[vidio.com/*.xml](https://vidio.com/*.xml)
+          # Perintah di bawah ini mengecek: kalau ada update baru disimpan, kalau tidak ada diam saja (biar tidak error)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto Update EPG: $(date)" && git push)
